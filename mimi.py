@@ -17,6 +17,12 @@ url_wb = os.environ.get('DISCORD_WH')
 path = 'alts.xlsx'
 df = pd.read_excel(path)
 
+# Get exchanges
+#ex_path = "/home/pi/OpenAlpha/exchanges.xlsx"
+ex_path = 'exchanges.xlsx'
+df_ex = pd.read_excel(ex_path)
+exchanges = df_ex['Address'].values
+
 # Hash db
 #hash_path "/home/pi/OpenAlpha/hash.xlsx"
 hash_path = 'hash.xlsx'
@@ -75,7 +81,7 @@ def contract_info(token, contract, pag=300):
 
 	# Transactions limit
 	actual_price = price(token)
-	usd_limit = 3e6 
+	usd_limit = 1e6 
 	qty_limit = usd_limit/actual_price
 	print(token, 'at', actual_price, '| Qty limit:', qty_limit)
 	transactions_number = len(value)
@@ -91,14 +97,21 @@ def contract_info(token, contract, pag=300):
 		recipient = val['to']
 		qty = float(val['value'])/1e18
 		qty_usd = qty*actual_price/1e6 # In millions
+
+		# Check limits and hashes
 		if (qty > qty_limit) & (t_hash not in df_hash.values):
+			# Update hash list
 			updated_list.append(t_hash)
-			print('Hash:', t_hash)
-			print('From:', sender)
-			print('To:', recipient)
-			print('Quantity:', qty, tokenSymbol)
-			print('URL:', site, '\n')
-			msg = f":notes: **Mimi Alert** | **{token}** | **{qty_usd:.2f}M**\n{site}"
+
+			# Check deposits
+			if recipient in exchanges:
+				msg = f":shit: **Mimi Alert** | **{token}** | **{qty_usd:.2f}M deposit** | Oh shit...:small_red_triangle_down:\n{site}"
+			elif sender in exchanges:
+				msg = f":dove: **Mimi Alert** | **{token}** | **{qty_usd:.2f}M withdrawal** | Number go :up:\n{site}"
+			else:
+				msg = f":notes: **Mimi Alert** | **{token}** | **{qty_usd:.2f}M**\n{site}"
+
+			# Discord
 			discord(msg)
 
 def price(token):
