@@ -17,6 +17,12 @@ url_wb = os.environ.get('DISCORD_WH')
 path = 'alts.xlsx'
 df = pd.read_excel(path)
 
+# Hash db
+#hash_path "/home/pi/OpenAlpha/hash.xlsx"
+hash_path = 'hash.xlsx'
+df_hash = pd.read_excel(hash_path)
+updated_list = []
+
 # Rate Limiter function
 def limited(until):
     duration = int(round(until - time.time()))
@@ -85,7 +91,8 @@ def contract_info(token, contract, pag=300):
 		recipient = val['to']
 		qty = float(val['value'])/1e18
 		qty_usd = qty*actual_price/1e6 # In millions
-		if qty > qty_limit:
+		if (qty > qty_limit) & (t_hash not in df_hash.values):
+			updated_list.append(t_hash)
 			print('Hash:', t_hash)
 			print('From:', sender)
 			print('To:', recipient)
@@ -109,4 +116,9 @@ def discord(msg):
 tokens, contracts = df['Token'], df['Contract']
 
 for token, contract in zip(tokens, contracts):
-	contract_info(token, contract, 150)
+	contract_info(token, contract, 100)
+
+# Update hash
+cols = ['Hash']
+df_update = df_hash.append(pd.DataFrame(updated_list, columns=cols), ignore_index = True)
+df_update.to_excel(hash_path, index = False)
